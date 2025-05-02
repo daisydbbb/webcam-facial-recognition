@@ -1,7 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 // We will add slices later
 
-
 // redux store
 export const store = configureStore({
   reducer: {
