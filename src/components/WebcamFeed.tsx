@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import Webcam from 'react-webcam';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
@@ -13,10 +13,20 @@ const WebcamFeed: React.FC = () => {
   const dispatch = useDispatch();
   const isWebcamOn = useSelector((state: RootState) => state.webcam.isActive);
   const faces = useSelector((state: RootState) => state.faces.faces);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load models when component mounts
   useEffect(() => {
-    loadModels();
+    const initializeModels = async () => {
+      try {
+        await loadModels();
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error loading models:', error);
+        setIsLoading(false);
+      }
+    };
+    initializeModels();
   }, []);
 
   // Process each frame for face detection
@@ -70,7 +80,7 @@ const WebcamFeed: React.FC = () => {
     if (isWebcamOn) {
       intervalId = setInterval(() => {
         processFrame();
-      }, 100); // Run every 100ms
+      }, 300); // Run every 300ms
     } else {
       dispatch(clearFaces());
     }
@@ -83,7 +93,6 @@ const WebcamFeed: React.FC = () => {
     };
   }, [isWebcamOn, processFrame, dispatch]);
 
-  // Handlers
   const handleStart = () => {
     dispatch(startWebcam());
   };
@@ -94,16 +103,32 @@ const WebcamFeed: React.FC = () => {
   };
 
   return (
-    <div className="container">
-      <h2> 📸 Webcam Feed</h2>
+    <div className="container px-3 py-4">
+      <h2 className="text-center mb-4">📸 Webcam Feed</h2>
 
-      {isWebcamOn ? (
-        <div style={{ position: 'relative', width: '100%', maxWidth: '600px' }}>
+      {isLoading ? (
+        <div className="d-flex justify-content-center align-items-center" style={{ height: '400px' }}>
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      ) : isWebcamOn ? (
+        <div className="webcam-container position-relative mx-auto" style={{
+          width: '100%',
+          maxWidth: '600px',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+        }}>
           <Webcam
             audio={false}
             ref={webcamRef}
             screenshotFormat="image/jpeg"
-            style={{ width: '100%', maxWidth: '600px' }}
+            style={{
+              width: '100%',
+              height: 'auto',
+              display: 'block'
+            }}
           />
           {faces.map((face) => (
             <FaceOverlay
@@ -116,25 +141,44 @@ const WebcamFeed: React.FC = () => {
         </div>
       ) : (
         <div
+          className="mx-auto d-flex align-items-center justify-content-center"
           style={{
             width: '100%',
             maxWidth: '600px',
             height: '400px',
-            backgroundColor: '#ccc',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '12px',
+            border: '2px dashed #dee2e6',
+            transition: 'all 0.3s ease'
           }}
         >
-          Webcam Stopped 🚫
+          <p className="text-muted mb-0">Webcam Stopped 🚫</p>
         </div>
       )}
 
-      <div className='mt-3'>
-        <button className="btn btn-primary" onClick={handleStart} disabled={isWebcamOn}>
+      <div className="d-flex justify-content-center gap-3 mt-4">
+        <button
+          className="btn btn-primary px-4 py-2"
+          onClick={handleStart}
+          disabled={isWebcamOn}
+          style={{
+            borderRadius: '8px',
+            transition: 'all 0.2s ease',
+            minWidth: '120px'
+          }}
+        >
           Start Webcam
         </button>
-        <button className="btn btn-danger mx-2" onClick={handleStop} disabled={!isWebcamOn} style={{ marginLeft: '1rem' }}>
+        <button
+          className="btn btn-danger px-4 py-2"
+          onClick={handleStop}
+          disabled={!isWebcamOn}
+          style={{
+            borderRadius: '8px',
+            transition: 'all 0.2s ease',
+            minWidth: '120px'
+          }}
+        >
           Stop Webcam
         </button>
       </div>
